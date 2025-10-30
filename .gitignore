@@ -1,0 +1,5 @@
+# Build/OS
+.DS_Store
+node_modules
+# Data written by Make
+data/edge.json

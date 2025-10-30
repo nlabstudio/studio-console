@@ -1,0 +1,17 @@
+# Cloudflare → Edge JSON (Make)
+vars:
+  CF_API_TOKEN: secret
+  ACCOUNT_ID: 1eb84e83496b431596fbecf117b2564e
+  ZONE_STUDIO: n-lab.studio
+  ZONE_AGENCY: n-lab.agency
+steps:
+  - GET zones?name={{ZONE_STUDIO}} -> studio_zone_id
+  - GET zones?name={{ZONE_AGENCY}} -> agency_zone_id
+  - GET zones/{{studio_zone_id}}/dns_records?per_page=500 -> dns_studio
+  - GET zones/{{agency_zone_id}}/dns_records?per_page=500 -> dns_agency
+  - GET zones/{{studio_zone_id}}/workers/routes -> routes_studio
+  - GET accounts/{{ACCOUNT_ID}}/workers/services -> services
+  - foreach services.result[].name:
+      GET accounts/{{ACCOUNT_ID}}/workers/services/{{item}}/deployments -> add deployments
+  - compose data/edge.json (schema see ../data/sample-edge.json)
+  - publish to R2 or Pages Direct Upload

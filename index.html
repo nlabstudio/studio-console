@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>N-Lab Edge Console</title>
+  <link rel="stylesheet" href="styles.css">
+</head><body>
+<header><h1>N-Lab Edge Console</h1><div id="meta"></div></header>
+<main>
+  <section>
+    <h2>DNS Records</h2>
+    <div class="tabs">
+      <button class="tab-btn" data-tab="dns-studio">n-lab.studio</button>
+      <button class="tab-btn" data-tab="dns-agency">n-lab.agency</button>
+    </div>
+    <div id="dns-studio" class="table-wrap"></div>
+    <div id="dns-agency" class="table-wrap" style="display:none"></div>
+  </section>
+  <section>
+    <h2>Workers Routes</h2>
+    <div class="tabs">
+      <button class="tab-btn" data-tab="wr-studio">studio</button>
+      <button class="tab-btn" data-tab="wr-agency">agency</button>
+    </div>
+    <div id="wr-studio" class="table-wrap"></div>
+    <div id="wr-agency" class="table-wrap" style="display:none"></div>
+  </section>
+  <section>
+    <h2>Workers Deployments</h2>
+    <div id="deployments" class="table-wrap"></div>
+  </section>
+</main>
+<footer><small>Last refresh: <span id="refreshed"></span> • Source: Cloudflare API via Make</small></footer>
+<script>
+const T = {
+  dns: (a)=>`<table><thead><tr><th>Name</th><th>Type</th><th>Content</th><th>Proxied</th><th>TTL</th></tr></thead><tbody>`+
+    a.map(r=>`<tr><td>${r.name}</td><td>${r.type}</td><td class="mono">${r.content}</td><td>${r.proxied?'✅':'—'}</td><td>${r.ttl}</td></tr>`).join('')+
+  `</tbody></table>`,
+  routes: (a)=>`<table><thead><tr><th>Pattern</th><th>Script</th><th>Enabled</th></tr></thead><tbody>`+
+    a.map(r=>`<tr><td class="mono">${r.pattern}</td><td>${r.script||''}</td><td>${r.enabled?'✅':'—'}</td></tr>`).join('')+
+  `</tbody></table>`,
+  deps: (a)=>`<table><thead><tr><th>Service</th><th>Env</th><th>Version</th><th>Status</th><th>Deployed at</th></tr></thead><tbody>`+
+    a.map(d=>`<tr><td>${d.service}</td><td>${d.env||''}</td><td class="mono">${d.version||''}</td><td>${d.status}</td><td>${new Date(d.timestamp).toLocaleString()}</td></tr>`).join('')+
+  `</tbody></table>`
+};
+function render(j){
+  document.getElementById('meta').innerHTML =
+    `<a target="_blank" href="${j.links.studioZone}">studio</a> · <a target="_blank" href="${j.links.agencyZone}">agency</a>`;
+  document.getElementById('refreshed').textContent = new Date(j.generatedAt).toLocaleString();
+  document.getElementById('dns-studio').innerHTML = T.dns(j.dns.studio);
+  document.getElementById('dns-agency').innerHTML = T.dns(j.dns.agency);
+  document.getElementById('wr-studio').innerHTML = T.routes(j.routes.studio);
+  document.getElementById('wr-agency').innerHTML = T.routes(j.routes.agency);
+  document.getElementById('deployments').innerHTML = T.deps(j.deployments);
+}
+function tabs(){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.tab;
+    document.querySelectorAll('.table-wrap').forEach(el=>el.style.display='none');
+    document.getElementById(id).style.display='block';
+  }));
+}
+fetch('data/edge.json',{cache:'no-store'})
+  .then(r=>r.json()).then(j=>{render(j);tabs();})
+  .catch(()=>{document.getElementById('deployments').innerHTML='<div style="padding:16px">No data yet. Put JSON at <code>/data/edge.json</code>.</div>';});
+</script>
+</body></html>
